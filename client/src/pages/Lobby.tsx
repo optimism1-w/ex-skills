@@ -259,7 +259,7 @@ function CreatePersonaDialog({
 
 export default function Lobby() {
   const [, navigate] = useLocation();
-  const { user, isAuthenticated, loading, logout } = useAuth();
+  const { user, isAuthenticated, isLoading: loading, logout } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
