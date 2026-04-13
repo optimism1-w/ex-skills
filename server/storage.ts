@@ -5,6 +5,14 @@ import { ENV } from './_core/env';
 
 type StorageConfig = { baseUrl: string; apiKey: string };
 
+// 本地开发模式的内存文件存储
+const memoryFileStore = new Map<string, { data: Buffer; contentType: string }>();
+let memoryFileId = 0;
+
+function useMemoryMode(): boolean {
+  return !ENV.forgeApiUrl || !ENV.forgeApiKey;
+}
+
 function getStorageConfig(): StorageConfig {
   const baseUrl = ENV.forgeApiUrl;
   const apiKey = ENV.forgeApiKey;
@@ -72,8 +80,19 @@ export async function storagePut(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
-  const { baseUrl, apiKey } = getStorageConfig();
   const key = normalizeKey(relKey);
+  
+  // 本地开发模式：使用内存存储，返回模拟 URL
+  if (useMemoryMode()) {
+    const buffer = typeof data === 'string' ? Buffer.from(data) : Buffer.from(data as any);
+    memoryFileStore.set(key, { data: buffer, contentType });
+    console.log(`[Memory Storage] Saved file: ${key}`);
+    // 返回一个模拟的 URL（实际数据存储在内存中）
+    const mockUrl = `memory://${key}`;
+    return { key, url: mockUrl };
+  }
+  
+  const { baseUrl, apiKey } = getStorageConfig();
   const uploadUrl = buildUploadUrl(baseUrl, key);
   const formData = toFormData(data, contentType, key.split("/").pop() ?? key);
   const response = await fetch(uploadUrl, {
@@ -93,8 +112,22 @@ export async function storagePut(
 }
 
 export async function storageGet(relKey: string): Promise<{ key: string; url: string; }> {
-  const { baseUrl, apiKey } = getStorageConfig();
   const key = normalizeKey(relKey);
+  
+  // 本地开发模式：从内存存储返回
+  if (useMemoryMode()) {
+    const file = memoryFileStore.get(key);
+    if (file) {
+      // 返回一个 base64 data URL
+      const base64 = file.data.toString('base64');
+      const dataUrl = `data:${file.contentType};base64,${base64}`;
+      return { key, url: dataUrl };
+    }
+    // 如果文件不存在，返回模拟 URL
+    return { key, url: `memory://${key}` };
+  }
+  
+  const { baseUrl, apiKey } = getStorageConfig();
   return {
     key,
     url: await buildDownloadUrl(baseUrl, key, apiKey),
