@@ -1,9 +1,3 @@
-/**
- * 前任 Skills 研究报告主页
- * 设计主题：极简科技研究报告（Swiss International Style）
- * 主色：深靛蓝 #1a237e | 强调：珊瑚橙 #ff6b35 | 辅助：薄荷绿 #00897b
- */
-
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import {
@@ -167,6 +161,37 @@ function ProgressBar({ label, value, color }: { label: string; value: number; co
 }
 
 export default function Home() {
+
+  // ==============================================
+  // 🔥 我帮你加的：终极防刷新（全局拦截）
+  // ==============================================
+  useEffect(() => {
+    const blockAllSubmit = (e) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return false;
+    };
+
+    const blockPageUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+
+    document.addEventListener("submit", blockAllSubmit, true);
+    window.addEventListener("beforeunload", blockPageUnload);
+
+    const originalReload = window.location.reload;
+    window.location.reload = () => {
+      console.log("已拦截刷新");
+    };
+
+    return () => {
+      document.removeEventListener("submit", blockAllSubmit, true);
+      window.removeEventListener("beforeunload", blockPageUnload);
+      window.location.reload = originalReload;
+    };
+  }, []);
+
   const [activeTab, setActiveTab] = useState<"colleague" | "ex">("colleague");
   const [navScrolled, setNavScrolled] = useState(false);
 
